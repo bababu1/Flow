@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1a202c;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
@@ -14,13 +14,31 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a202c;
+    --foreground: #e2e8f0;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  user-select: none;
 }
+
+/* ▼▼▼ 여기에 body를 제외한 나머지 기존 CSS를 모두 붙여넣으세요 ▼▼▼ */
+.view { display: none; }
+.view.active { display: block; }
+
+#quest-map-view {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+#quest-map-container {
+  flex-grow: 1;
+  position: relative;
+}
+
+/* ... (나머지 모든 스타일들) ... */
