@@ -1,3 +1,5 @@
+// src/app/project/[id]/page.tsx
+
 'use client';
 
 import { useState, useEffect, MouseEvent } from 'react';
@@ -30,8 +32,8 @@ export default function ProjectPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [contextMenu, setContextMenu] = useState<ContextMenu>({ visible: false, x: 0, y: 0 });
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // --- 기존 함수들 (변경 없음) ---
   useEffect(() => {
     if (!projectId) return;
     const storedProjects = localStorage.getItem('localDataProjects');
@@ -51,56 +53,64 @@ export default function ProjectPage() {
         localStorage.setItem('localDataProjects', JSON.stringify(updatedProjects));
     }
   };
-  const handleContextMenu = (e: MouseEvent) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY }); };
-  const closeContextMenu = () => { setContextMenu({ ...contextMenu, visible: false }); };
+
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
+  };
+
+  const handleMapClick = () => {
+    setContextMenu({ ...contextMenu, visible: false });
+    setSelectedNodeId(null);
+  };
+
   const handleCreateNode = () => {
     if (!project) return;
     const newNode: Node = { id: 'node_' + Date.now(), title: '새 챕터', x: contextMenu.x, y: contextMenu.y, };
     const updatedProject = { ...project, nodes: { ...project.nodes, [newNode.id]: newNode, }, };
     setProject(updatedProject);
     saveProject(updatedProject);
-    closeContextMenu();
+    handleMapClick();
   };
   
-  // ▼▼▼ 1. 드래그 '중'에 호출될 함수 (실시간 화면 업데이트만 담당) ▼▼▼
-  const handleNodeDrag = (nodeId: string, newPosition: { x: number, y: number }) => {
+  // 드래그가 '끝났을 때'만 호출될 함수입니다.
+  // 여기서 전체 프로젝트 상태를 업데이트하고 localStorage에 저장합니다.
+  const handleNodeDragEnd = (nodeId: string, finalPosition: { x: number, y: number }) => {
     setProject(prevProject => {
       if (!prevProject) return null;
-      return {
-        ...prevProject,
-        nodes: {
-          ...prevProject.nodes,
-          [nodeId]: { ...prevProject.nodes[nodeId], ...newPosition }
-        }
+
+      const updatedNodes = {
+        ...prevProject.nodes,
+        [nodeId]: { ...prevProject.nodes[nodeId], ...finalPosition }
       };
+
+      const updatedProject = { ...prevProject, nodes: updatedNodes };
+      
+      // 상태 업데이트와 저장을 한번에 처리
+      saveProject(updatedProject);
+      
+      return updatedProject;
     });
   };
 
-  // ▼▼▼ 2. 드래그가 '끝났을 때' 호출될 함수 (localStorage 저장 담당) ▼▼▼
-  const handleNodeDragEnd = () => {
-    if (project) {
-      saveProject(project);
-    }
-  };
-
-  // --- 렌더링 로직 ---
   if (loading) { return <div>로딩 중...</div>; }
   if (!project) { return <div>프로젝트를 찾을 수 없습니다.</div>; }
 
   return (
-    <div id="quest-map-view" onClick={closeContextMenu}>
+    <div id="quest-map-view" onClick={handleMapClick}>
       <div id="quest-map-container" onContextMenu={handleContextMenu}>
         <Link href="/" id="back-to-projects" className="fixed top-4 left-4 z-20 breadcrumb-link text-white font-bold text-lg cursor-pointer hover:text-blue-400">&lt; 프로젝트 목록</Link>
         <div id="quest-map">
-          <svg id="connector-svg">{/* ... */}</svg>
+          <svg id="connector-svg">{/* 커넥터 로직은 추후 추가 */}</svg>
           
-          {/* ▼▼▼ 3. QuestNode에 올바른 함수들을 연결합니다 ▼▼▼ */}
           {Object.values(project.nodes).map((node) => (
             <QuestNode 
               key={node.id} 
               node={node} 
-              onPositionChange={handleNodeDrag}
+              // onPositionChange prop을 제거하고 onDragEnd만 남깁니다.
               onDragEnd={handleNodeDragEnd}
+              isSelected={selectedNodeId === node.id}
+              onSelect={setSelectedNodeId}
             />
           ))}
         </div>
