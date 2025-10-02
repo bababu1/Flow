@@ -1,82 +1,120 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, MouseEvent } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import QuestNode from '@/components/QuestNode';
 
-// 프로젝트 데이터 타입 정의
+// --- 타입 정의 ---
+interface Node {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+}
 interface Project {
   id: string;
   name: string;
-  nodes: { [key: string]: any }; // nodes는 객체 형태임을 명시
+  nodes: { [key: string]: Node };
   connections: any[];
+}
+interface ContextMenu {
+  visible: boolean;
+  x: number;
+  y: number;
 }
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params.id as string;
-
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contextMenu, setContextMenu] = useState<ContextMenu>({ visible: false, x: 0, y: 0 });
 
+  // --- 기존 함수들 (변경 없음) ---
   useEffect(() => {
+    if (!projectId) return;
     const storedProjects = localStorage.getItem('localDataProjects');
     if (storedProjects) {
-      const projects = JSON.parse(storedProjects);
-      const currentProject = projects.find((p: Project) => p.id === projectId);
-      if (currentProject) {
-        setProject(currentProject);
-      }
+        const projects = JSON.parse(storedProjects);
+        const currentProject = projects.find((p: Project) => p.id === projectId);
+        if (currentProject) { setProject(currentProject); }
     }
     setLoading(false);
   }, [projectId]);
 
-  if (loading) {
-    return <div className="w-full h-screen flex items-center justify-center"><p>로딩 중...</p></div>;
-  }
+  const saveProject = (updatedProject: Project) => {
+    const storedProjects = localStorage.getItem('localDataProjects');
+    if (storedProjects) {
+        const projects = JSON.parse(storedProjects);
+        const updatedProjects = projects.map((p: Project) => p.id === updatedProject.id ? updatedProject : p);
+        localStorage.setItem('localDataProjects', JSON.stringify(updatedProjects));
+    }
+  };
+  const handleContextMenu = (e: MouseEvent) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY }); };
+  const closeContextMenu = () => { setContextMenu({ ...contextMenu, visible: false }); };
+  const handleCreateNode = () => {
+    if (!project) return;
+    const newNode: Node = { id: 'node_' + Date.now(), title: '새 챕터', x: contextMenu.x, y: contextMenu.y, };
+    const updatedProject = { ...project, nodes: { ...project.nodes, [newNode.id]: newNode, }, };
+    setProject(updatedProject);
+    saveProject(updatedProject);
+    closeContextMenu();
+  };
+  
+  // ▼▼▼ 1. 드래그 '중'에 호출될 함수 (실시간 화면 업데이트만 담당) ▼▼▼
+  const handleNodeDrag = (nodeId: string, newPosition: { x: number, y: number }) => {
+    setProject(prevProject => {
+      if (!prevProject) return null;
+      return {
+        ...prevProject,
+        nodes: {
+          ...prevProject.nodes,
+          [nodeId]: { ...prevProject.nodes[nodeId], ...newPosition }
+        }
+      };
+    });
+  };
 
-  if (!project) {
-    return (
-      <div className="w-full h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold">프로젝트를 찾을 수 없습니다.</h1>
-        <Link href="/" className="mt-4 text-blue-400 hover:underline">
-          &lt; 목록으로 돌아가기
-        </Link>
-      </div>
-    );
-  }
+  // ▼▼▼ 2. 드래그가 '끝났을 때' 호출될 함수 (localStorage 저장 담당) ▼▼▼
+  const handleNodeDragEnd = () => {
+    if (project) {
+      saveProject(project);
+    }
+  };
 
-  // --- 여기가 바뀝니다! ---
-  // 데이터 확인용 UI 대신 실제 퀘스트 맵 UI를 반환합니다.
+  // --- 렌더링 로직 ---
+  if (loading) { return <div>로딩 중...</div>; }
+  if (!project) { return <div>프로젝트를 찾을 수 없습니다.</div>; }
+
   return (
-    <div id="quest-map-view">
-      <div id="quest-map-container">
-        <Link href="/" id="back-to-projects" className="fixed top-4 left-4 z-20 breadcrumb-link text-white font-bold text-lg cursor-pointer hover:text-blue-400">
-          &lt; 프로젝트 목록
-        </Link>
+    <div id="quest-map-view" onClick={closeContextMenu}>
+      <div id="quest-map-container" onContextMenu={handleContextMenu}>
+        <Link href="/" id="back-to-projects" className="fixed top-4 left-4 z-20 breadcrumb-link text-white font-bold text-lg cursor-pointer hover:text-blue-400">&lt; 프로젝트 목록</Link>
         <div id="quest-map">
-          <svg id="connector-svg">
-            <defs>
-              <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7280"></path></marker>
-              <marker id="arrowhead-hover" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"></path></marker>
-            </defs>
-          </svg>
-
-          {/* 불러온 project 데이터의 nodes를 화면에 렌더링합니다. (지금은 0개라 아무것도 안 나옵니다) */}
-          {Object.values(project.nodes).map((node: any) => (
-            <div
-              key={node.id}
-              className="quest-node w-40 h-24 rounded-lg flex items-center justify-center text-center p-2 shadow-lg"
-              style={{ position: 'absolute', left: `${node.x}px`, top: `${node.y}px` }}
-            >
-              <p className="font-bold pointer-events-none">{node.title || '새 챕터'}</p>
-            </div>
+          <svg id="connector-svg">{/* ... */}</svg>
+          
+          {/* ▼▼▼ 3. QuestNode에 올바른 함수들을 연결합니다 ▼▼▼ */}
+          {Object.values(project.nodes).map((node) => (
+            <QuestNode 
+              key={node.id} 
+              node={node} 
+              onPositionChange={handleNodeDrag}
+              onDragEnd={handleNodeDragEnd}
+            />
           ))}
         </div>
+        {contextMenu.visible && (
+          <div className="fixed bg-gray-700 text-white rounded-md shadow-lg py-1 z-50" style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}>
+            <ul>
+              <li className="px-4 py-2 hover:bg-gray-600 cursor-pointer" onClick={handleCreateNode}>챕터 생성</li>
+              <li className="px-4 py-2 hover:bg-gray-600 cursor-pointer">이미지 추가</li>
+            </ul>
+          </div>
+        )}
       </div>
       <div id="panel-resizer"></div>
       <div id="directory-tree-panel">
-        {/* 불러온 project 데이터의 name을 제목으로 사용합니다. */}
         <h2 id="project-title-in-tree" className="text-xl font-bold mb-4 pb-2 border-b border-gray-600 cursor-pointer">
           {project.name}
         </h2>
