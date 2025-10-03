@@ -160,6 +160,8 @@ export default function ProjectPage() {
               if (!project) return null; // project가 null일 경우를 대비
               const processedConnections = new Set<string>();
               const lines = [];
+              // 선 두께
+              const LINE_STROKE_WIDTH = 4;
 
               for (const conn of project.connections) {
                 if (processedConnections.has(conn.id)) continue;
@@ -198,7 +200,7 @@ export default function ProjectPage() {
                   const p1_finalX = p1_end.x - Math.cos(angle) * endMagnitude;
                   const p1_finalY = p1_end.y - Math.sin(angle) * endMagnitude;
                   lines.push(
-                    <line key={conn.id} x1={p1_start.x} y1={p1_start.y} x2={p1_finalX} y2={p1_finalY} stroke="#6b7280" strokeWidth="2" markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, conn.id)} onMouseUp={handleLineMouseUp}/>
+                    <line key={conn.id} x1={p1_start.x} y1={p1_start.y} x2={p1_finalX} y2={p1_finalY} stroke="#6b7280" strokeWidth={LINE_STROKE_WIDTH} markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, conn.id)} onMouseUp={handleLineMouseUp}/>
                   );
                   
                   // 2. B -> A 방향의 선 (아래쪽 간격)
@@ -207,7 +209,7 @@ export default function ProjectPage() {
                   const p2_finalX = p2_end.x + Math.cos(angle) * endMagnitude;
                   const p2_finalY = p2_end.y + Math.sin(angle) * endMagnitude;
                   lines.push(
-                    <line key={reverseConn.id} x1={p2_start.x} y1={p2_start.y} x2={p2_finalX} y2={p2_finalY} stroke="#6b7280" strokeWidth="2" markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, reverseConn.id)} onMouseUp={handleLineMouseUp}/>
+                    <line key={reverseConn.id} x1={p2_start.x} y1={p2_start.y} x2={p2_finalX} y2={p2_finalY} stroke="#6b7280" strokeWidth={LINE_STROKE_WIDTH} markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, reverseConn.id)} onMouseUp={handleLineMouseUp}/>
                   );
 
                 } else {
@@ -216,7 +218,7 @@ export default function ProjectPage() {
                   const finalX = endPoint.x - Math.cos(angle) * endMagnitude;
                   const finalY = endPoint.y - Math.sin(angle) * endMagnitude;
                   lines.push(
-                    <line key={conn.id} x1={startPoint.x} y1={startPoint.y} x2={finalX} y2={finalY} stroke="#6b7280" strokeWidth="3" markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, conn.id)} onMouseUp={handleLineMouseUp}/>
+                    <line key={conn.id} x1={startPoint.x} y1={startPoint.y} x2={finalX} y2={finalY} stroke="#6b7280" strokeWidth={LINE_STROKE_WIDTH} markerEnd="url(#arrowhead)" className="cursor-pointer hover:stroke-red-500 transition-colors" style={{ pointerEvents: 'auto' }} onMouseDown={(e) => handleLineMouseDown(e, conn.id)} onMouseUp={handleLineMouseUp}/>
                   );
                 }
               }
