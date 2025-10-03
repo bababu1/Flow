@@ -72,25 +72,26 @@ export default function ProjectPage() {
     saveProject(updatedProject);
     handleMapClick();
   };
+
+  const handleNodeDrag = (nodeId: string, newPosition: { x: number, y: number }) => {
+    setProject(prevProject => {
+      if (!prevProject) return null;
+      return {
+        ...prevProject,
+        nodes: {
+          ...prevProject.nodes,
+          [nodeId]: { ...prevProject.nodes[nodeId], ...newPosition }
+        }
+      };
+    });
+  };
   
   // 드래그가 '끝났을 때'만 호출될 함수입니다.
   // 여기서 전체 프로젝트 상태를 업데이트하고 localStorage에 저장합니다.
   const handleNodeDragEnd = (nodeId: string, finalPosition: { x: number, y: number }) => {
-    setProject(prevProject => {
-      if (!prevProject) return null;
-
-      const updatedNodes = {
-        ...prevProject.nodes,
-        [nodeId]: { ...prevProject.nodes[nodeId], ...finalPosition }
-      };
-
-      const updatedProject = { ...prevProject, nodes: updatedNodes };
-      
-      // 상태 업데이트와 저장을 한번에 처리
-      saveProject(updatedProject);
-      
-      return updatedProject;
-    });
+    if (project) {
+      saveProject(project);
+    }
   };
 
   if (loading) { return <div>로딩 중...</div>; }
@@ -107,6 +108,8 @@ export default function ProjectPage() {
             <QuestNode 
               key={node.id} 
               node={node} 
+              onPositionChange={handleNodeDrag}
+
               // onPositionChange prop을 제거하고 onDragEnd만 남깁니다.
               onDragEnd={handleNodeDragEnd}
               isSelected={selectedNodeId === node.id}
