@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, MouseEvent, useEffect } from 'react';
+import { useState, MouseEvent, useEffect, useRef } from 'react';
 
 interface Node {
   id: string;
@@ -22,12 +22,14 @@ export default function QuestNode({ node, onDragEnd, isSelected, onSelect }: Que
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: node.x, y: node.y });
+  const hasMoved = useRef(false);
 
   useEffect(() => {
     setPosition({ x: node.x, y: node.y });
   }, [node.x, node.y]);
 
   const handleMouseMove = (e: globalThis.MouseEvent) => {
+    hasMoved.current = true;
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
     setPosition({ x: newX, y: newY });
@@ -39,6 +41,7 @@ export default function QuestNode({ node, onDragEnd, isSelected, onSelect }: Que
   };
   
   const handleMouseDown = (e: MouseEvent) => {
+    hasMoved.current = false;
     e.stopPropagation();
     setIsDragging(true);
     setDragStart({
@@ -72,7 +75,9 @@ export default function QuestNode({ node, onDragEnd, isSelected, onSelect }: Que
       onMouseDown={handleMouseDown}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(node.id);
+        if (!hasMoved.current) {
+            onSelect(node.id);
+          }
       }}
     >
       <p className="font-bold pointer-events-none">{node.title || '새 챕터'}</p>
