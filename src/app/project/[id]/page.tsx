@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import QuestNode from '@/components/QuestNode';
 import CustomConfirm from '@/components/CustomConfirm';
+import QuestEditModal from '@/components/QuestEditModal'; 
+
 
 // --- 타입(Data Structure) 정의 ---
 interface Node {
@@ -13,6 +15,7 @@ interface Node {
   x: number;
   y: number;
 }
+
 interface Project {
   id: string;
   name: string;
@@ -35,6 +38,7 @@ export default function ProjectPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [connectionToDelete, setConnectionToDelete] = useState<string | null>(null);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null); // 현재 수정 중인 노드의 ID
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // --- 데이터 불러오기 & 저장 ---
@@ -107,6 +111,35 @@ export default function ProjectPage() {
   
   const handleNodeDragEnd = (nodeId: string, finalPosition: { x: number, y: number }) => {
     if (project) { saveProject(project); }
+  };
+
+  // --- 모달 인터랙션 핸들러 ---
+  const handleOpenModal = (nodeId: string) => {
+    setEditingNodeId(nodeId);
+  };
+
+  const handleCloseModal = () => {
+    setEditingNodeId(null);
+  };
+
+  const handleSaveModal = (nodeId: string, data: Partial<Node>) => {
+    if (!project) return;
+  
+    // 1. 새로운 데이터로 project 상태를 업데이트합니다.
+    const updatedProject = {
+      ...project,
+      nodes: {
+        ...project.nodes,
+        [nodeId]: {
+          ...project.nodes[nodeId], // 기존 노드 정보
+          ...data,                  // 새로 받은 데이터로 덮어쓰기
+        },
+      },
+    };
+    setProject(updatedProject);
+    saveProject(updatedProject); // 2. localStorage에 저장합니다.
+  
+    setEditingNodeId(null); // 3. 모달을 닫습니다.
   };
 
   // --- 연결선 인터랙션 핸들러 ---
@@ -231,6 +264,7 @@ export default function ProjectPage() {
               key={node.id} node={node} 
               onPositionChange={handleNodeDrag} onDragEnd={handleNodeDragEnd}
               isSelected={selectedNodeId === node.id} onSelect={handleNodeSelect}
+              onDoubleClick={handleOpenModal}
             />
           ))}
         </div>
@@ -258,6 +292,15 @@ export default function ProjectPage() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+
+      {editingNodeId && (
+        <QuestEditModal
+          node={project.nodes[editingNodeId]}
+          onClose={handleCloseModal}
+          onSave={handleSaveModal}
+        />
+      )}
+
     </div>
   );
 }

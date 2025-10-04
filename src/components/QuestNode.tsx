@@ -17,9 +17,10 @@ interface QuestNodeProps {
   onDragEnd: (nodeId: string, finalPosition: { x: number; y: number }) => void;
   isSelected: boolean;
   onSelect: (nodeId: string) => void;
+  onDoubleClick: (nodeId: string) => void;
 }
 
-export default function QuestNode({ node, onDragEnd, isSelected, onSelect, onPositionChange }: QuestNodeProps) {
+export default function QuestNode({ node, onDragEnd, isSelected, onSelect, onPositionChange, onDoubleClick }: QuestNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const hasMoved = useRef(false);
@@ -75,6 +76,10 @@ export default function QuestNode({ node, onDragEnd, isSelected, onSelect, onPos
         if (!hasMoved.current) {
             onSelect(node.id);
           }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick(node.id);
       }}
     >
       <p className="font-bold pointer-events-none">{node.title || '새 챕터'}</p>
