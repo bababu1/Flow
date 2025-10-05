@@ -15,10 +15,11 @@ interface NodeData {
 interface QuestEditModalProps {
   node: NodeData | null;
   onClose: () => void;
+  onDelete: () => void; 
   onSave: (nodeId: string, data: Partial<NodeData>) => void; // 어떤 노드를, 어떤 데이터로 저장할지 전달
 }
 
-export default function QuestEditModal({ node, onClose, onSave }: QuestEditModalProps) {
+export default function QuestEditModal({ node, onClose, onSave, onDelete }: QuestEditModalProps) {
   // ▼▼▼ 모달 내부에서 수정되는 데이터를 관리할 상태를 만듭니다. ▼▼▼
   const [formData, setFormData] = useState({ title: '', qdd: '', intent: '', scenario: '' });
 
@@ -84,7 +85,7 @@ export default function QuestEditModal({ node, onClose, onSave }: QuestEditModal
           </div>
         </div>
         <div className="p-4 border-t border-gray-700 mt-auto flex justify-end gap-3">
-          <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">삭제</button>
+          <button onClick={onDelete} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">삭제</button>
           {/* ▼▼▼ 저장 버튼에 handleSave 함수를 연결합니다. ▼▼▼ */}
           <button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">저장</button>
         </div>

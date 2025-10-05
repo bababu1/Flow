@@ -39,6 +39,7 @@ export default function ProjectPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [connectionToDelete, setConnectionToDelete] = useState<string | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null); // 현재 수정 중인 노드의 ID
+  const [nodeToDelete, setNodeToDelete] = useState<string | null>(null); // 삭제할 노드의 ID
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // --- 데이터 불러오기 & 저장 ---
@@ -140,6 +141,41 @@ export default function ProjectPage() {
     saveProject(updatedProject); // 2. localStorage에 저장합니다.
   
     setEditingNodeId(null); // 3. 모달을 닫습니다.
+  };
+
+// --- 노드 삭제 핸들러 ---
+
+// 1. 모달에서 '삭제' 버튼을 누르면 호출될 함수
+const handleRequestDelete = () => {
+  if (!editingNodeId) return;
+  setNodeToDelete(editingNodeId); // 삭제할 노드 ID를 기록
+  handleCloseModal(); // 수정 모달은 닫음
+};
+
+  // 2. '삭제 확인' 창에서 '예'를 누르면 호출될 함수
+  const confirmNodeDelete = () => {
+    if (!project || !nodeToDelete) return;
+
+    // 새 노드 목록에서 삭제할 노드만 제외
+    const newNodes = { ...project.nodes };
+    delete newNodes[nodeToDelete];
+
+    // 삭제될 노드와 연결된 모든 선을 제거
+    const newConnections = project.connections.filter(
+      conn => conn.from !== nodeToDelete && conn.to !== nodeToDelete
+    );
+
+    const updatedProject = {
+      ...project,
+      nodes: newNodes,
+      connections: newConnections,
+    };
+
+    setProject(updatedProject);
+    saveProject(updatedProject);
+
+    // 확인 창 닫기
+    setNodeToDelete(null);
   };
 
   // --- 연결선 인터랙션 핸들러 ---
@@ -285,6 +321,7 @@ export default function ProjectPage() {
         <ul id="directory-tree"></ul>
       </div>
       
+      {/* 1. 연결선 삭제 확인 창 */}
       {showDeleteConfirm && (
         <CustomConfirm
           message="이 연결을 삭제하시겠습니까?"
@@ -293,9 +330,20 @@ export default function ProjectPage() {
         />
       )}
 
+      {/* 2. 노드 삭제 확인 창 */}
+      {nodeToDelete && (
+        <CustomConfirm
+          message={`'${project?.nodes[nodeToDelete]?.title}' 챕터를 삭제하시겠습니까? (연결된 모든 선도 함께 삭제됩니다)`}
+          onConfirm={confirmNodeDelete}
+          onCancel={() => setNodeToDelete(null)}
+        />
+      )}
+
+      {/* 3. 노드 수정 모달 */}
       {editingNodeId && (
         <QuestEditModal
           node={project.nodes[editingNodeId]}
+          onDelete={handleRequestDelete}
           onClose={handleCloseModal}
           onSave={handleSaveModal}
         />
